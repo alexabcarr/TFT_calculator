@@ -18,10 +18,13 @@ base_amounts = {1: 30, 2: 25, 3: 18, 4: 10, 5: 9}
 # There is no shop for level 1, so there are no rates
 # tier_rates_per_level[3] = {1: .75, 2: .25, 3: .0, 4: .0, 5: .0} means that at level 3,
 #    there is a 75% chance to roll tier 1 champions and a 25% chance for tier 2 champions in each shop slot
+# 'All ones', 'All twos', 'All threes', 'All fours', 'All fives', and 'The count' are all charms that guarantee the shop to have certain odds regardless of level
 tier_rates_per_level = {2: {1: 1, 2: .0, 3: .0, 4: .0, 5: .0}, 3: {1: .75, 2: .25, 3: .0, 4: .0, 5: .0}, 4: {1: .55, 2: .30, 3: .15, 4: .0, 5: .0},
                         5: {1: .45, 2: .33, 3: .20, 4: .02, 5: .0}, 6: {1: .30, 2: .40, 3: .25, 4: .05, 5: .0}, 7: {1: .19, 2: .30, 3: .40, 4: .10, 5: .01},
-                        8: {1: .18, 2: .27, 3: .32, 4: .20, 5: .3}, 9: {1: .15, 2: .20, 3: .25, 4: .30, 5: .10}, 10: {1: .05, 2: .10, 3: .20, 4: .40, 5: .25},
-                        11: {1: .01, 2: .10, 3: .12, 4: .50, 5: .35}}
+                        8: {1: .18, 2: .27, 3: .32, 4: .20, 5: .03}, 9: {1: .15, 2: .20, 3: .25, 4: .30, 5: .10}, 10: {1: .05, 2: .10, 3: .20, 4: .40, 5: .25},
+                        11: {1: .01, 2: .10, 3: .12, 4: .50, 5: .35}, "All ones": {1: 1, 2: 0, 3: 0, 4: 0, 5: 0}, "All twos": {1: 0, 2: 1, 3: 0, 4: 0, 5: 0}, 
+                        "All threes": {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}, "All fours": {1: 0, 2: 0, 3: 0, 4: 1, 5: 0}, "All fives": {1: 0, 2: 0, 3: 0, 4: 0, 5: 1},
+                        "The count": {1: .2, 2: .2, 3: .2, 4: .2, 5: .2}}
 
 class InventoryApp:
     def __init__(self, root):
@@ -103,9 +106,9 @@ class InventoryApp:
             img_label.grid(row=champ_row, column=champ_col, rowspan=3, sticky="w")
 
             # Champion name
-            champion_buffer = (max_len_per_cost[champ_col] - len(champ_name)) * 2
+            champion_buffer = (max_len_per_cost[champ_col] - len(champ_name))
             formatted_name = champ_name.center(len(champ_name) + champion_buffer)
-            name_label = tk.Label(frame, text=formatted_name)
+            name_label = tk.Label(frame, text=formatted_name, font= "TkFixedFont")
             name_label.grid(row=champ_row, column=champ_col+1)
 
             # Quantity display          
@@ -331,8 +334,13 @@ class InventoryApp:
         # Determine the champion's tier
         champ_tier = self.items[champ]['tier']
 
+        try:
+            level = int(level)
+        except:
+            pass
+
         # Determine the chances of rolling any unit of the target's tier
-        level_odds = tier_rates_per_level[int(level)][champ_tier]
+        level_odds = tier_rates_per_level[level][champ_tier]
 
         # Find the number of the target champions left
         target_champs_left = self.items[champ]["quantity"]
