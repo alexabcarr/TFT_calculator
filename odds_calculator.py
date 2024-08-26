@@ -3,6 +3,8 @@ from PIL import Image, ImageTk
 import json
 import os
 
+import random
+
 # Find the root path to the files
 dirname = os.path.dirname(os.path.abspath(__file__))
 
@@ -14,16 +16,19 @@ max_len_per_cost = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
 # The base amount of each tier of champion in the store
 base_amounts = {1: 30, 2: 25, 3: 18, 4: 10, 5: 9}
 
+# Associate each tier with the in-game color
+tier_colors = {1: "gray", 2: "green", 3: "blue", 4: "purple", 5: "gold"}
+
 # The rate of rolling each tier of champion (for each shop slot) at the given level
 # There is no shop for level 1, so there are no rates
 # tier_rates_per_level[3] = {1: .75, 2: .25, 3: .0, 4: .0, 5: .0} means that at level 3,
 #    there is a 75% chance to roll tier 1 champions and a 25% chance for tier 2 champions in each shop slot
 # 'All ones', 'All twos', 'All threes', 'All fours', 'All fives', and 'The count' are all charms that guarantee the shop to have certain odds regardless of level
-tier_rates_per_level = {2: {1: 1, 2: .0, 3: .0, 4: .0, 5: .0}, 3: {1: .75, 2: .25, 3: .0, 4: .0, 5: .0}, 4: {1: .55, 2: .30, 3: .15, 4: .0, 5: .0},
-                        5: {1: .45, 2: .33, 3: .20, 4: .02, 5: .0}, 6: {1: .30, 2: .40, 3: .25, 4: .05, 5: .0}, 7: {1: .19, 2: .30, 3: .40, 4: .10, 5: .01},
-                        8: {1: .18, 2: .27, 3: .32, 4: .20, 5: .03}, 9: {1: .15, 2: .20, 3: .25, 4: .30, 5: .10}, 10: {1: .05, 2: .10, 3: .20, 4: .40, 5: .25},
-                        11: {1: .01, 2: .10, 3: .12, 4: .50, 5: .35}, "All ones": {1: 1, 2: 0, 3: 0, 4: 0, 5: 0}, "All twos": {1: 0, 2: 1, 3: 0, 4: 0, 5: 0}, 
-                        "All threes": {1: 0, 2: 0, 3: 1, 4: 0, 5: 0}, "All fours": {1: 0, 2: 0, 3: 0, 4: 1, 5: 0}, "All fives": {1: 0, 2: 0, 3: 0, 4: 0, 5: 1},
+tier_rates_per_level = {"2": {1: 1, 2: .0, 3: .0, 4: .0, 5: .0}, "3": {1: .75, 2: .25, 3: .0, 4: .0, 5: .0}, "4": {1: .55, 2: .30, 3: .15, 4: .0, 5: .0},
+                        "5": {1: .45, 2: .33, 3: .20, 4: .02, 5: .0}, "6": {1: .30, 2: .40, 3: .25, 4: .05, 5: .0}, "7": {1: .19, 2: .30, 3: .40, 4: .10, 5: .01},
+                        "8": {1: .18, 2: .27, 3: .32, 4: .20, 5: .03}, "9": {1: .15, 2: .20, 3: .25, 4: .30, 5: .10}, "10": {1: .05, 2: .10, 3: .20, 4: .40, 5: .25},
+                        "11": {1: .01, 2: .10, 3: .12, 4: .50, 5: .35}, "All ones": {1: 1, 2: 0, 3: 0, 4: 0, 5: 0}, "All twos": {1: 0, 2: 1, 3: 0, 4: 0, 5: 0}, 
+                        "All threes": {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}, "All fours": {1: 0, 2: 0, 3: 0, 4: 1, 5: 0}, "All fives": {1: 0, 2: 0, 3: 0, 4: 0, 5: 1},
                         "The count": {1: .2, 2: .2, 3: .2, 4: .2, 5: .2}}
 
 class InventoryApp:
@@ -82,7 +87,6 @@ class InventoryApp:
         # Track the number of champions encountered for each tier
         tier_rows = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
         
-        tier_colors = {1: "gray", 2: "green", 3: "blue", 4: "purple", 5: "gold"}
 
         # Initialize the frame for each champion
         for champ_name, champ_info in self.items.items():
@@ -173,28 +177,34 @@ class InventoryApp:
 
         # Enclose the flavor text in a box
         frame = tk.Frame(self.root, highlightbackground="black", highlightthickness=2)
-        frame.grid(row=9, column=5, padx= 5, pady= 5)
+        frame.grid(row=10, column=5, padx= 5, pady= 5)
 
         stats_label = tk.Label(frame, text="")
-        stats_label.grid(row=10, column=5, pady=5)
+        stats_label.grid(row=11, column=5, pady=5)
+
+        # Adds a bar to visualize the percentages
+        percentage_bar = tk.Canvas(root, bd=1, relief="solid", width=196, height=20)
+        percentage_bar.grid(row=9, column=5, padx= 5, pady= 5, sticky='e')
 
         # A button to calculate and update the odds
-        calculate_button = tk.Button(frame, text="Calculate odds", command= lambda: self.update_odds())
-        calculate_button.grid(row=9, column=5, padx=5)
+        calculate_button = tk.Button(root, text="Calculate odds", command= lambda: self.update_odds())
+        calculate_button.grid(row=9, column=5, padx=5, sticky='w')
         
         # Initialize a new instance variable to access the odds variables as necessary
         self.rolling_params = {}
         self.rolling_params["level"] = current_level
         self.rolling_params["champ"] = selected_champ
         self.rolling_params["odds"] = stats_label
+        self.rolling_params["bar"] = percentage_bar
         stats_label.configure(text="Select a champion and your current level, then click 'Calculate odds!'")
 
+
+        # Button to reset the board to the default state
+        wipe_button = tk.Button(root, text="Wipe the whole board", command= lambda: self.wipe_board())
+        wipe_button.grid(row=12, column=5, padx=5)
         # Highlight red so the user is hopefully cautious
         frame = tk.Frame(self.root, highlightbackground="red", highlightthickness=4)
         frame.grid(row=12, column=5)
-        # Button to reset the board to the default state
-        wipe_button = tk.Button(frame, text="Wipe the whole board", command= lambda: self.wipe_board())
-        wipe_button.grid(row=12, column=5, padx=5)
 
 
     def change_quantity(self, champ_name, amount):
@@ -334,11 +344,6 @@ class InventoryApp:
         # Determine the champion's tier
         champ_tier = self.items[champ]['tier']
 
-        try:
-            level = int(level)
-        except:
-            pass
-
         # Determine the chances of rolling any unit of the target's tier
         level_odds = tier_rates_per_level[level][champ_tier]
 
@@ -375,17 +380,27 @@ class InventoryApp:
         except:
             gold = 99
         # Adding another formatted string for the expected gold spent per target champion
-        gold_string = "This means you can expect to spend about {0:.2f} gold rolling to see each {1}.".format(max(2, gold), champ)
+        gold_string = "You can expect to spend about {0:.2f} gold rolling to see each {1}.".format(max(2, gold), champ)
 
         # An optional flavor_string if the gold or ev are outside of the expecetd values
         flavor_string = ""
         if gold > 30:
-            flavor_string = "\nThis is higher than average. You might want to consider searching for a different unit/double-checking boards."
+            flavor_string = "\nThis is higher than average. \nYou might want to consider searching for a different unit/double-checking boards."
         if ev > 2: 
-            flavor_string = "\nYou're expecting more than 2 {0}s per roll, which is rather high. Are your boards scouted properly?".format(champ)
+            flavor_string = "\nYou're expecting more than 2 {0}s per roll, which is rather high. \nAre your boards scouted properly?".format(champ)
         
         # Update the flavor sentence by concatenating the relevant strings
         self.rolling_params["odds"].configure(text=ev_string + gold_string + flavor_string)
+
+        # Update the percentage bar to be filled in with the relative percentages for each tier of champion
+        last_tier = 0
+        for tier in tier_rates_per_level[level]:
+            current_odds = tier_rates_per_level[level][tier]
+            self.rolling_params["bar"].create_rectangle(last_tier, 0, last_tier+200*current_odds, 25, fill=tier_colors[tier])
+            if current_odds > .05:
+                self.rolling_params["bar"].create_text(last_tier+100*current_odds, 12, fill="white", activefill="black", font=('Arial', 7), text=f"{current_odds*100:.0f}%")
+            last_tier = last_tier+200*(tier_rates_per_level[level][tier])
+            
     
 if __name__ == "__main__":
     root = tk.Tk()
