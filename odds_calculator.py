@@ -3,8 +3,6 @@ from PIL import Image, ImageTk
 import json
 import os
 
-import random
-
 # Find the root path to the files
 dirname = os.path.dirname(os.path.abspath(__file__))
 
